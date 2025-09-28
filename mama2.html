@@ -1,0 +1,3425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduClass - Platform Pembelajaran Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        .notification-slide {
+            animation: slideInRight 0.3s ease-out;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .pulse-notification {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .video-call-overlay {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .grade-progress {
+            transition: width 0.5s ease-in-out;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .mobile-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                border-top: 1px solid #e5e7eb;
+                z-index: 40;
+            }
+            .main-content {
+                padding-bottom: 80px;
+            }
+            .modal-mobile {
+                margin: 0;
+                border-radius: 0;
+                height: 100vh;
+                max-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- Notifications will appear here -->
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-2xl font-bold text-blue-600">📚 EduClass</h1>
+                    </div>
+                    <nav class="hidden md:ml-8 md:flex md:space-x-8">
+                        <button onclick="showSection('classes')" class="nav-btn text-gray-900 hover:text-blue-600 px-3 py-2 text-sm font-medium">Kelas</button>
+                        <button onclick="showSection('calendar'); loadCalendar()" class="nav-btn text-gray-500 hover:text-blue-600 px-3 py-2 text-sm font-medium">Kalender</button>
+                        <button onclick="showSection('assignments')" class="nav-btn text-gray-500 hover:text-blue-600 px-3 py-2 text-sm font-medium">Tugas</button>
+                        <button onclick="showSection('gradebook')" class="nav-btn text-gray-500 hover:text-blue-600 px-3 py-2 text-sm font-medium">Nilai</button>
+                    </nav>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Notification Bell -->
+                    <div class="relative">
+                        <button onclick="toggleNotifications()" class="relative p-2 text-gray-500 hover:text-gray-700">
+                            🔔
+                            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        </button>
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border z-50">
+                            <div class="p-4 border-b">
+                                <h3 class="font-semibold text-gray-900">Notifikasi</h3>
+                            </div>
+                            <div id="notificationList" class="max-h-64 overflow-y-auto">
+                                <!-- Notifications will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openCreateClassModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        + Buat Kelas
+                    </button>
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                U
+                            </div>
+                        </button>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pengaturan</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Keluar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav md:hidden">
+        <div class="flex justify-around py-2">
+            <button onclick="showSection('classes')" class="mobile-nav-btn flex flex-col items-center py-2 px-3 text-blue-600">
+                <span class="text-xl">🏠</span>
+                <span class="text-xs">Kelas</span>
+            </button>
+            <button onclick="showSection('calendar'); loadCalendar()" class="mobile-nav-btn flex flex-col items-center py-2 px-3 text-gray-500">
+                <span class="text-xl">📅</span>
+                <span class="text-xs">Kalender</span>
+            </button>
+            <button onclick="showSection('assignments')" class="mobile-nav-btn flex flex-col items-center py-2 px-3 text-gray-500">
+                <span class="text-xl">📝</span>
+                <span class="text-xs">Tugas</span>
+            </button>
+            <button onclick="showSection('gradebook')" class="mobile-nav-btn flex flex-col items-center py-2 px-3 text-gray-500">
+                <span class="text-xl">📊</span>
+                <span class="text-xs">Nilai</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 main-content">
+        <!-- Classes Section -->
+        <div id="classesSection" class="section">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Kelas Saya</h2>
+                <button onclick="openJoinClassModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    + Gabung Kelas
+                </button>
+            </div>
+            
+            <div id="classesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Classes will be populated here -->
+            </div>
+        </div>
+
+        <!-- Calendar Section -->
+        <div id="calendarSection" class="section hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Kalender</h2>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <button onclick="previousMonth()" class="p-2 hover:bg-gray-100 rounded">←</button>
+                    <h3 id="currentMonth" class="text-lg font-semibold"></h3>
+                    <button onclick="nextMonth()" class="p-2 hover:bg-gray-100 rounded">→</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 mb-4">
+                    <div class="text-center font-medium text-gray-500 py-2">Min</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Sen</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Sel</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Rab</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Kam</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Jum</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Sab</div>
+                </div>
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+                    <!-- Calendar days will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignments Section -->
+        <div id="assignmentsSection" class="section hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Tugas</h2>
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <div class="flex space-x-4 mb-4">
+                        <button onclick="filterAssignments('all')" class="assignment-filter-btn bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Semua</button>
+                        <button onclick="filterAssignments('assigned')" class="assignment-filter-btn text-gray-600 px-3 py-1 rounded-full text-sm hover:bg-gray-100">Ditugaskan</button>
+                        <button onclick="filterAssignments('missing')" class="assignment-filter-btn text-gray-600 px-3 py-1 rounded-full text-sm hover:bg-gray-100">Terlewat</button>
+                        <button onclick="filterAssignments('done')" class="assignment-filter-btn text-gray-600 px-3 py-1 rounded-full text-sm hover:bg-gray-100">Selesai</button>
+                    </div>
+                    <div id="assignmentsList">
+                        <!-- Assignments will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gradebook Section -->
+        <div id="gradebookSection" class="section hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Buku Nilai</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Grade Overview -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">Ringkasan Nilai</h3>
+                        <div id="gradesList" class="space-y-4">
+                            <!-- Grades will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Grade Statistics -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">Statistik</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span>Rata-rata Keseluruhan</span>
+                                    <span id="overallAverage" class="font-medium">85%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="overallProgress" class="bg-blue-600 h-2 rounded-full grade-progress" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span>Tugas Selesai</span>
+                                    <span id="completedTasks">8/10</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-600 h-2 rounded-full grade-progress" style="width: 80%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">Pencapaian</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">🏆</span>
+                                <div>
+                                    <p class="font-medium text-sm">Siswa Terbaik</p>
+                                    <p class="text-xs text-gray-500">Nilai tertinggi bulan ini</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">⭐</span>
+                                <div>
+                                    <p class="font-medium text-sm">Rajin Mengerjakan</p>
+                                    <p class="text-xs text-gray-500">10 tugas berturut-turut</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Video Call Modal -->
+    <div id="videoCallModal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-hidden">
+                <div class="video-call-overlay text-white p-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Video Call - <!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduClass - Platform Pembelajaran Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        .notification-slide {
+            animation: slideInRight 0.3s ease-out;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .pulse-notification {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .video-call-overlay {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .grade-progress {
+            transition: width 0.5s ease-in-out;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .mobile-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                border-top: 1px solid #e5e7eb;
+                z-index: 40;
+            }
+            .main-content {
+                padding-bottom: 80px;
+            }
+            .modal-mobile {
+                margin: 0;
+                border-radius: 0;
+                height: 100vh;
+                max-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- Notifications will appear here -->
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-2xl font-bold text-blue-600">📚 EduClass</h1>
+                    </div>
+                    <nav class="hidden md:ml-8 md:flex md:space-x-8">
+                        <button onclick="showSection('classes')" class="nav-btn text-gray-900 hover:text-blue-600 px-3 py-2 text-sm font-medium">Kelas</button>
+                        <button onclick="showSection('calendar'); loadCalendar()" class="nav-btn text-gray-500 hover:text-blue-600 px-3 py-2 text-sm font-medium">Kalender</button>
+                        <button onclick="showSection('assignments')" class="nav-btn text-gray-500 hover:text-blue-600 px-3 py-2 text-sm font-medium">Tugas</button>
+                        <button onclick="showSection('gradebook')" class="nav-btn text-gray-500 hover:text-blue-600 px-3 py-2 text-sm font-medium">Nilai</button>
+                    </nav>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Notification Bell -->
+                    <div class="relative">
+                        <button onclick="toggleNotifications()" class="relative p-2 text-gray-500 hover:text-gray-700">
+                            🔔
+                            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        </button>
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border z-50">
+                            <div class="p-4 border-b">
+                                <h3 class="font-semibold text-gray-900">Notifikasi</h3>
+                            </div>
+                            <div id="notificationList" class="max-h-64 overflow-y-auto">
+                                <!-- Notifications will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openCreateClassModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        + Buat Kelas
+                    </button>
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                U
+                            </div>
+                        </button>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pengaturan</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Keluar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav md:hidden">
+        <div class="flex justify-around py-2">
+            <button onclick="showSection('classes')" class="mobile-nav-btn flex flex-col items-center py-2 px-3 text-blue-600">
+                <span class="text-xl">🏠</span>
+                <span class="text-xs">Kelas</span>
+            </button>
+            <button onclick="showSection('calendar'); loadCalendar()" class="mobile-nav-btn flex flex-col items-center py-2 px-3 text-gray-500">
+                <span class="text-xl">📅</span>
+                <span class="text-xs">Kalender</span>
+            </button>
+            <button onclick="showSection('assignments')" class="mobile-nav-btn flex flex-col items-center py-2 px-3 text-gray-500">
+                <span class="text-xl">📝</span>
+                <span class="text-xs">Tugas</span>
+            </button>
+            <button onclick="showSection('gradebook')" class="mobile-nav-btn flex flex-col items-center py-2 px-3 text-gray-500">
+                <span class="text-xl">📊</span>
+                <span class="text-xs">Nilai</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 main-content">
+        <!-- Classes Section -->
+        <div id="classesSection" class="section">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Kelas Saya</h2>
+                <button onclick="openJoinClassModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    + Gabung Kelas
+                </button>
+            </div>
+            
+            <div id="classesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Classes will be populated here -->
+            </div>
+        </div>
+
+        <!-- Calendar Section -->
+        <div id="calendarSection" class="section hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Kalender</h2>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <button onclick="previousMonth()" class="p-2 hover:bg-gray-100 rounded">←</button>
+                    <h3 id="currentMonth" class="text-lg font-semibold"></h3>
+                    <button onclick="nextMonth()" class="p-2 hover:bg-gray-100 rounded">→</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 mb-4">
+                    <div class="text-center font-medium text-gray-500 py-2">Min</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Sen</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Sel</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Rab</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Kam</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Jum</div>
+                    <div class="text-center font-medium text-gray-500 py-2">Sab</div>
+                </div>
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+                    <!-- Calendar days will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignments Section -->
+        <div id="assignmentsSection" class="section hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Tugas</h2>
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <div class="flex space-x-4 mb-4">
+                        <button onclick="filterAssignments('all')" class="assignment-filter-btn bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Semua</button>
+                        <button onclick="filterAssignments('assigned')" class="assignment-filter-btn text-gray-600 px-3 py-1 rounded-full text-sm hover:bg-gray-100">Ditugaskan</button>
+                        <button onclick="filterAssignments('missing')" class="assignment-filter-btn text-gray-600 px-3 py-1 rounded-full text-sm hover:bg-gray-100">Terlewat</button>
+                        <button onclick="filterAssignments('done')" class="assignment-filter-btn text-gray-600 px-3 py-1 rounded-full text-sm hover:bg-gray-100">Selesai</button>
+                    </div>
+                    <div id="assignmentsList">
+                        <!-- Assignments will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gradebook Section -->
+        <div id="gradebookSection" class="section hidden">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Buku Nilai</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Grade Overview -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">Ringkasan Nilai</h3>
+                        <div id="gradesList" class="space-y-4">
+                            <!-- Grades will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Grade Statistics -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">Statistik</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span>Rata-rata Keseluruhan</span>
+                                    <span id="overallAverage" class="font-medium">85%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="overallProgress" class="bg-blue-600 h-2 rounded-full grade-progress" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span>Tugas Selesai</span>
+                                    <span id="completedTasks">8/10</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-600 h-2 rounded-full grade-progress" style="width: 80%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold mb-4">Pencapaian</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">🏆</span>
+                                <div>
+                                    <p class="font-medium text-sm">Siswa Terbaik</p>
+                                    <p class="text-xs text-gray-500">Nilai tertinggi bulan ini</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">⭐</span>
+                                <div>
+                                    <p class="font-medium text-sm">Rajin Mengerjakan</p>
+                                    <p class="text-xs text-gray-500">10 tugas berturut-turut</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Video Call Modal -->
+    <div id="videoCallModal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-hidden">
+                <div class="video-call-overlay text-white p-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Video Call - Matematika Kelas 10</h3>
+                        <button onclick="endVideoCall()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm">
+                            Akhiri
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="relative bg-gray-900 h-96">
+                    <!-- Main video area -->
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <div class="text-center text-white">
+                            <div class="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl">👨‍🏫</span>
+                            </div>
+                            <p class="text-lg font-medium">Pak Budi</p>
+                            <p class="text-sm text-gray-300">Guru Matematika</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Participant thumbnails -->
+                    <div class="absolute bottom-4 right-4 flex space-x-2">
+                        <div class="w-20 h-16 bg-gray-700 rounded border-2 border-blue-500 flex items-center justify-center">
+                            <span class="text-white text-sm">Anda</span>
+                        </div>
+                        <div class="w-20 h-16 bg-gray-700 rounded flex items-center justify-center">
+                            <span class="text-white text-xs">+23</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-gray-100">
+                    <div class="flex justify-center space-x-4">
+                        <button onclick="toggleMute()" id="muteBtn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full">
+                            🎤
+                        </button>
+                        <button onclick="toggleVideo()" id="videoBtn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full">
+                            📹
+                        </button>
+                        <button onclick="shareScreen()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full">
+                            🖥️
+                        </button>
+                        <button onclick="toggleChat()" class="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full">
+                            💬
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Chat Panel -->
+                <div id="chatPanel" class="hidden absolute right-0 top-0 bottom-0 w-80 bg-white border-l">
+                    <div class="p-4 border-b">
+                        <h4 class="font-semibold">Chat</h4>
+                    </div>
+                    <div id="chatMessages" class="flex-1 p-4 h-64 overflow-y-auto space-y-2">
+                        <div class="text-sm">
+                            <span class="font-medium text-blue-600">Pak Budi:</span>
+                            <span class="text-gray-700">Selamat datang di kelas online!</span>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t">
+                        <div class="flex space-x-2">
+                            <input type="text" id="chatInput" placeholder="Ketik pesan..." class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                            <button onclick="sendChatMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Kirim</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class Detail Modal -->
+    <div id="classDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto fade-in md:modal-mobile">
+                <div id="classDetailContent">
+                    <!-- Class detail content will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Class Modal -->
+    <div id="createClassModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Buat Kelas Baru</h3>
+                        <button onclick="closeCreateClassModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    <form onsubmit="createClass(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kelas</label>
+                                <input type="text" id="className" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Matematika Kelas 10">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
+                                <input type="text" id="classSubject" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Matematika">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+                                <textarea id="classDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Deskripsi singkat tentang kelas"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button type="button" onclick="closeCreateClassModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Batal
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                                Buat Kelas
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Class Modal -->
+    <div id="joinClassModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Gabung Kelas</h3>
+                        <button onclick="closeJoinClassModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    <form onsubmit="joinClass(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Kode Kelas</label>
+                                <input type="text" id="classCode" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan kode kelas">
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button type="button" onclick="closeJoinClassModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Batal
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700">
+                                Gabung
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Submission Modal -->
+    <div id="assignmentSubmissionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Kumpulkan Tugas</h3>
+                        <button onclick="closeAssignmentSubmissionModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    <div id="assignmentSubmissionContent">
+                        <!-- Assignment submission content will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Assignment Modal -->
+    <div id="gradeAssignmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Beri Nilai Tugas</h3>
+                        <button onclick="closeGradeAssignmentModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    <div id="gradeAssignmentContent">
+                        <!-- Grade assignment content will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data state
+        let classes = JSON.parse(localStorage.getItem('classes')) || [];
+        let assignments = JSON.parse(localStorage.getItem('assignments')) || [];
+        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || { id: 1, name: 'User', role: 'student' };
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let currentAssignmentFilter = 'all';
+        let isMuted = false;
+        let isVideoOn = true;
+        let notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            // Load initial data if empty
+            if (classes.length === 0) {
+                initializeSampleData();
+            }
+            
+            // Load UI components
+            loadClasses();
+            loadAssignments();
+            updateNotificationBadge();
+            loadNotifications();
+            
+            // Show classes section by default
+            showSection('classes');
+        }
+
+        function initializeSampleData() {
+            // Sample classes
+            classes = [
+                {
+                    id: 1,
+                    name: 'Matematika Kelas 10',
+                    subject: 'Matematika',
+                    description: 'Pembelajaran matematika untuk kelas 10',
+                    teacher: 'Pak Budi',
+                    code: 'MATH10',
+                    color: 'bg-blue-500',
+                    students: 25,
+                    assignments: 3
+                },
+                {
+                    id: 2,
+                    name: 'Fisika Kelas 11',
+                    subject: 'Fisika',
+                    description: 'Pembelajaran fisika untuk kelas 11',
+                    teacher: 'Ibu Sari',
+                    code: 'FIS11',
+                    color: 'bg-green-500',
+                    students: 20,
+                    assignments: 2
+                }
+            ];
+
+            // Sample assignments
+            assignments = [
+                {
+                    id: 1,
+                    classId: 1,
+                    title: 'Tugas Trigonometri',
+                    description: 'Kerjakan soal trigonometri halaman 45-50',
+                    dueDate: '2023-12-15',
+                    points: 100,
+                    status: 'assigned', // assigned, submitted, graded
+                    submission: null,
+                    grade: null,
+                    feedback: null
+                },
+                {
+                    id: 2,
+                    classId: 1,
+                    title: 'Ujian Aljabar',
+                    description: 'Ujian tengah semester aljabar',
+                    dueDate: '2023-12-20',
+                    points: 100,
+                    status: 'assigned',
+                    submission: null,
+                    grade: null,
+                    feedback: null
+                },
+                {
+                    id: 3,
+                    classId: 2,
+                    title: 'Tugas Kinematika',
+                    description: 'Kerjakan soal kinematika gerak lurus',
+                    dueDate: '2023-12-10',
+                    points: 100,
+                    status: 'submitted',
+                    submission: {
+                        date: '2023-12-08',
+                        file: 'tugas_kinematika.pdf',
+                        note: 'Sudah selesai dikerjakan'
+                    },
+                    grade: null,
+                    feedback: null
+                }
+            ];
+
+            // Save to localStorage
+            localStorage.setItem('classes', JSON.stringify(classes));
+            localStorage.setItem('assignments', JSON.stringify(assignments));
+        }
+
+        // Navigation functions
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-gray-900');
+                btn.classList.add('text-gray-500');
+            });
+            
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                btn.classList.remove('text-blue-600');
+                btn.classList.add('text-gray-500');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            
+            // Set active nav button
+            const navBtn = document.querySelector(`.nav-btn[onclick="showSection('${sectionName}')"]`);
+            if (navBtn) {
+                navBtn.classList.remove('text-gray-500');
+                navBtn.classList.add('text-gray-900');
+            }
+            
+            const mobileNavBtn = document.querySelector(`.mobile-nav-btn[onclick="showSection('${sectionName}')"]`);
+            if (mobileNavBtn) {
+                mobileNavBtn.classList.remove('text-gray-500');
+                mobileNavBtn.classList.add('text-blue-600');
+            }
+        }
+
+        // Class management functions
+        function loadClasses() {
+            const classesList = document.getElementById('classesList');
+            classesList.innerHTML = '';
+            
+            classes.forEach(classItem => {
+                const classElement = document.createElement('div');
+                classElement.className = 'bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow';
+                classElement.innerHTML = `
+                    <div class="${classItem.color} h-2"></div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold text-gray-900">${classItem.name}</h3>
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${classItem.code}</span>
+                        </div>
+                        <p class="text-gray-600 mb-2">${classItem.subject} - ${classItem.teacher}</p>
+                        <p class="text-gray-500 text-sm mb-4">${classItem.description}</p>
+                        <div class="flex justify-between text-sm text-gray-500">
+                            <span>${classItem.students} siswa</span>
+                            <span>${classItem.assignments} tugas</span>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <button onclick="openClassDetail(${classItem.id})" class="flex-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-2 rounded text-sm font-medium">
+                                Buka Kelas
+                            </button>
+                            <button onclick="startVideoCall(${classItem.id})" class="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-2 rounded text-sm font-medium">
+                                Panggilan
+                            </button>
+                        </div>
+                    </div>
+                `;
+                classesList.appendChild(classElement);
+            });
+        }
+
+        function openClassDetail(classId) {
+            const classItem = classes.find(c => c.id === classId);
+            if (!classItem) return;
+            
+            const classAssignments = assignments.filter(a => a.classId === classId);
+            
+            document.getElementById('classDetailContent').innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900">${classItem.name}</h3>
+                        <button onclick="closeClassDetailModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-800">Mata Pelajaran</h4>
+                            <p class="text-blue-600">${classItem.subject}</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-green-800">Pengajar</h4>
+                            <p class="text-green-600">${classItem.teacher}</p>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-purple-800">Kode Kelas</h4>
+                            <p class="text-purple-600">${classItem.code}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold mb-3">Deskripsi Kelas</h4>
+                        <p class="text-gray-700">${classItem.description}</p>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-lg font-semibold">Tugas Kelas</h4>
+                            ${currentUser.role === 'teacher' ? 
+                                `<button onclick="openCreateAssignmentModal(${classId})" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                                    + Tambah Tugas
+                                </button>` : ''}
+                        </div>
+                        
+                        <div class="space-y-4">
+                            ${classAssignments.map(assignment => `
+                                <div class="border rounded-lg p-4">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h5 class="font-semibold">${assignment.title}</h5>
+                                        <span class="text-sm ${getStatusColor(assignment.status)}">${getStatusText(assignment.status)}</span>
+                                    </div>
+                                    <p class="text-gray-600 text-sm mb-2">${assignment.description}</p>
+                                    <div class="flex justify-between text-sm text-gray-500">
+                                        <span>Batas: ${formatDate(assignment.dueDate)}</span>
+                                        <span>Nilai: ${assignment.grade ? `${assignment.grade}/${assignment.points}` : 'Belum dinilai'}</span>
+                                    </div>
+                                    <div class="mt-3 flex space-x-2">
+                                        ${currentUser.role === 'student' ? `
+                                            ${assignment.status === 'assigned' ? 
+                                                `<button onclick="openAssignmentSubmission(${assignment.id})" class="bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                                                    Kumpulkan
+                                                </button>` : ''}
+                                            ${assignment.status === 'submitted' ? 
+                                                `<span class="bg-green-100 text-green-800 px-3 py-1 rounded text-sm">Menunggu penilaian</span>` : ''}
+                                            ${assignment.status === 'graded' ? 
+                                                `<button onclick="viewAssignmentFeedback(${assignment.id})" class="bg-purple-600 text-white px-3 py-1 rounded text-sm">
+                                                    Lihat Nilai
+                                                </button>` : ''}
+                                        ` : ''}
+                                        
+                                        ${currentUser.role === 'teacher' ? `
+                                            ${assignment.status === 'submitted' ? 
+                                                `<button onclick="openGradeAssignment(${assignment.id})" class="bg-yellow-600 text-white px-3 py-1 rounded text-sm">
+                                                    Beri Nilai
+                                                </button>` : ''}
+                                            ${assignment.status === 'graded' ? 
+                                                `<button onclick="openGradeAssignment(${assignment.id})" class="bg-purple-600 text-white px-3 py-1 rounded text-sm">
+                                                    Edit Nilai
+                                                </button>` : ''}
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                            
+                            ${classAssignments.length === 0 ? 
+                                '<p class="text-gray-500 text-center py-4">Belum ada tugas untuk kelas ini.</p>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('classDetailModal').classList.remove('hidden');
+        }
+
+        function closeClassDetailModal() {
+            document.getElementById('classDetailModal').classList.add('hidden');
+        }
+
+        function openCreateClassModal() {
+            document.getElementById('createClassModal').classList.remove('hidden');
+        }
+
+        function closeCreateClassModal() {
+            document.getElementById('createClassModal').classList.add('hidden');
+        }
+
+        function createClass(event) {
+            event.preventDefault();
+            
+            const className = document.getElementById('className').value;
+            const classSubject = document.getElementById('classSubject').value;
+            const classDescription = document.getElementById('classDescription').value;
+            
+            const newClass = {
+                id: classes.length + 1,
+                name: className,
+                subject: classSubject,
+                description: classDescription,
+                teacher: currentUser.name,
+                code: generateClassCode(),
+                color: getRandomColor(),
+                students: 0,
+                assignments: 0
+            };
+            
+            classes.push(newClass);
+            localStorage.setItem('classes', JSON.stringify(classes));
+            
+            closeCreateClassModal();
+            loadClasses();
+            showNotification('Kelas berhasil dibuat!', 'success');
+            
+            // Reset form
+            document.getElementById('className').value = '';
+            document.getElementById('classSubject').value = '';
+            document.getElementById('classDescription').value = '';
+        }
+
+        function openJoinClassModal() {
+            document.getElementById('joinClassModal').classList.remove('hidden');
+        }
+
+        function closeJoinClassModal() {
+            document.getElementById('joinClassModal').classList.add('hidden');
+        }
+
+        function joinClass(event) {
+            event.preventDefault();
+            
+            const classCode = document.getElementById('classCode').value.toUpperCase();
+            const classItem = classes.find(c => c.code === classCode);
+            
+            if (classItem) {
+                classItem.students += 1;
+                localStorage.setItem('classes', JSON.stringify(classes));
+                
+                closeJoinClassModal();
+                loadClasses();
+                showNotification('Berhasil bergabung dengan kelas!', 'success');
+                
+                // Reset form
+                document.getElementById('classCode').value = '';
+            } else {
+                showNotification('Kode kelas tidak valid!', 'error');
+            }
+        }
+
+        // Assignment management functions
+        function loadAssignments() {
+            const assignmentsList = document.getElementById('assignmentsList');
+            assignmentsList.innerHTML = '';
+            
+            let filteredAssignments = assignments;
+            
+            if (currentAssignmentFilter === 'assigned') {
+                filteredAssignments = assignments.filter(a => a.status === 'assigned');
+            } else if (currentAssignmentFilter === 'missing') {
+                // Filter assignments that are past due and not submitted/graded
+                const today = new Date().toISOString().split('T')[0];
+                filteredAssignments = assignments.filter(a => a.dueDate < today && a.status === 'assigned');
+            } else if (currentAssignmentFilter === 'done') {
+                filteredAssignments = assignments.filter(a => a.status === 'submitted' || a.status === 'graded');
+            }
+            
+            if (filteredAssignments.length === 0) {
+                assignmentsList.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-500">Tidak ada tugas yang ditemukan.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filteredAssignments.forEach(assignment => {
+                const classItem = classes.find(c => c.id === assignment.classId);
+                if (!classItem) return;
+                
+                const assignmentElement = document.createElement('div');
+                assignmentElement.className = 'border rounded-lg p-4 mb-4';
+                assignmentElement.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold text-lg">${assignment.title}</h3>
+                        <span class="text-sm ${getStatusColor(assignment.status)}">${getStatusText(assignment.status)}</span>
+                    </div>
+                    <p class="text-gray-600 mb-2">${classItem.name} - ${classItem.subject}</p>
+                    <p class="text-gray-700 mb-3">${assignment.description}</p>
+                    <div class="flex justify-between items-center text-sm text-gray-500">
+                        <span>Batas waktu: ${formatDate(assignment.dueDate)}</span>
+                        <span>Nilai: ${assignment.points} poin</span>
+                    </div>
+                    <div class="mt-3">
+                        ${currentUser.role === 'student' ? `
+                            ${assignment.status === 'assigned' ? 
+                                `<button onclick="openAssignmentSubmission(${assignment.id})" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium">
+                                    Kumpulkan Tugas
+                                </button>` : ''}
+                            ${assignment.status === 'submitted' ? 
+                                `<span class="bg-green-100 text-green-800 px-4 py-2 rounded text-sm font-medium">
+                                    Sudah dikumpulkan - Menunggu penilaian
+                                </span>` : ''}
+                            ${assignment.status === 'graded' ? 
+                                `<button onclick="viewAssignmentFeedback(${assignment.id})" class="bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium">
+                                    Lihat Nilai: ${assignment.grade}/${assignment.points}
+                                </button>` : ''}
+                        ` : ''}
+                        
+                        ${currentUser.role === 'teacher' ? `
+                            ${assignment.status === 'submitted' ? 
+                                `<button onclick="openGradeAssignment(${assignment.id})" class="bg-yellow-600 text-white px-4 py-2 rounded text-sm font-medium">
+                                    Beri Nilai
+                                </button>` : ''}
+                            ${assignment.status === 'graded' ? 
+                                `<button onclick="openGradeAssignment(${assignment.id})" class="bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium">
+                                    Edit Nilai: ${assignment.grade}/${assignment.points}
+                                </button>` : ''}
+                        ` : ''}
+                    </div>
+                `;
+                assignmentsList.appendChild(assignmentElement);
+            });
+        }
+
+        function filterAssignments(filter) {
+            currentAssignmentFilter = filter;
+            
+            // Update active filter button
+            document.querySelectorAll('.assignment-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'text-blue-800');
+                btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+            });
+            
+            event.target.classList.add('bg-blue-100', 'text-blue-800');
+            event.target.classList.remove('text-gray-600', 'hover:bg-gray-100');
+            
+            loadAssignments();
+        }
+
+        function openAssignmentSubmission(assignmentId) {
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+            
+            const classItem = classes.find(c => c.id === assignment.classId);
+            
+            document.getElementById('assignmentSubmissionContent').innerHTML = `
+                <div>
+                    <h4 class="font-semibold text-lg mb-2">${assignment.title}</h4>
+                    <p class="text-gray-600 mb-4">${classItem.name} - ${classItem.subject}</p>
+                    <p class="text-gray-700 mb-4">${assignment.description}</p>
+                    <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <p class="text-yellow-800 text-sm">Batas waktu: ${formatDate(assignment.dueDate)}</p>
+                    </div>
+                    
+                    <form onsubmit="submitAssignment(event, ${assignmentId})">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">File Tugas</label>
+                            <input type="file" id="assignmentFile" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Catatan (opsional)</label>
+                            <textarea id="assignmentNote" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" placeholder="Tambahkan catatan untuk guru..."></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" onclick="closeAssignmentSubmissionModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Batal
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                                Kumpulkan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.getElementById('assignmentSubmissionModal').classList.remove('hidden');
+        }
+
+        function closeAssignmentSubmissionModal() {
+            document.getElementById('assignmentSubmissionModal').classList.add('hidden');
+        }
+
+        function submitAssignment(event, assignmentId) {
+            event.preventDefault();
+            
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+            
+            const fileInput = document.getElementById('assignmentFile');
+            const note = document.getElementById('assignmentNote').value;
+            
+            // Simulate file upload
+            if (!fileInput.files.length) {
+                showNotification('Harap pilih file tugas!', 'error');
+                return;
+            }
+            
+            assignment.status = 'submitted';
+            assignment.submission = {
+                date: new Date().toISOString().split('T')[0],
+                file: fileInput.files[0].name,
+                note: note
+            };
+            
+            localStorage.setItem('assignments', JSON.stringify(assignments));
+            
+            closeAssignmentSubmissionModal();
+            loadAssignments();
+            
+            // If in class detail, reload it
+            if (!document.getElementById('classDetailModal').classList.contains('hidden')) {
+                const classId = assignment.classId;
+                openClassDetail(classId);
+            }
+            
+            showNotification('Tugas berhasil dikumpulkan!', 'success');
+            
+            // Add notification for teacher
+            if (currentUser.role === 'student') {
+                const classItem = classes.find(c => c.id === assignment.classId);
+                addNotification(
+                    'Tugas Baru Dikumpulkan',
+                    `${currentUser.name} mengumpulkan tugas "${assignment.title}"`,
+                    'info'
+                );
+            }
+        }
+
+        function openGradeAssignment(assignmentId) {
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+            
+            const classItem = classes.find(c => c.id === assignment.classId);
+            
+            document.getElementById('gradeAssignmentContent').innerHTML = `
+                <div>
+                    <h4 class="font-semibold text-lg mb-2">${assignment.title}</h4>
+                    <p class="text-gray-600 mb-4">${classItem.name} - ${classItem.subject}</p>
+                    
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <h5 class="font-medium mb-2">Pengumpulan Siswa:</h5>
+                        ${assignment.submission ? `
+                            <p class="text-sm"><strong>File:</strong> ${assignment.submission.file}</p>
+                            <p class="text-sm"><strong>Tanggal:</strong> ${formatDate(assignment.submission.date)}</p>
+                            <p class="text-sm"><strong>Catatan:</strong> ${assignment.submission.note || 'Tidak ada catatan'}</p>
+                        ` : '<p class="text-sm text-gray-500">Belum ada pengumpulan</p>'}
+                    </div>
+                    
+                    <form onsubmit="gradeAssignment(event, ${assignmentId})">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nilai (0-${assignment.points})</label>
+                            <input type="number" id="assignmentGrade" min="0" max="${assignment.points}" 
+                                value="${assignment.grade || ''}" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Feedback untuk siswa</label>
+                            <textarea id="assignmentFeedback" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="4" 
+                                placeholder="Berikan feedback untuk siswa...">${assignment.feedback || ''}</textarea>
+                        </div>
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" onclick="closeGradeAssignmentModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Batal
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700">
+                                Simpan Nilai
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.getElementById('gradeAssignmentModal').classList.remove('hidden');
+        }
+
+        function closeGradeAssignmentModal() {
+            document.getElementById('gradeAssignmentModal').classList.add('hidden');
+        }
+
+        function gradeAssignment(event, assignmentId) {
+            event.preventDefault();
+            
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+            
+            const grade = parseInt(document.getElementById('assignmentGrade').value);
+            const feedback = document.getElementById('assignmentFeedback').value;
+            
+            if (grade < 0 || grade > assignment.points) {
+                showNotification(`Nilai harus antara 0-${assignment.points}!`, 'error');
+                return;
+            }
+            
+            assignment.status = 'graded';
+            assignment.grade = grade;
+            assignment.feedback = feedback;
+            
+            localStorage.setItem('assignments', JSON.stringify(assignments));
+            
+            closeGradeAssignmentModal();
+            loadAssignments();
+            
+            // If in class detail, reload it
+            if (!document.getElementById('classDetailModal').classList.contains('hidden')) {
+                const classId = assignment.classId;
+                openClassDetail(classId);
+            }
+            
+            showNotification('Nilai berhasil disimpan!', 'success');
+            
+            // Add notification for student
+            if (currentUser.role === 'teacher') {
+                addNotification(
+                    'Tugas Dinilai',
+                    `Tugas "${assignment.title}" telah dinilai: ${grade}/${assignment.points}`,
+                    'success'
+                );
+            }
+        }
+
+        function viewAssignmentFeedback(assignmentId) {
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (!assignment || assignment.status !== 'graded') return;
+            
+            const classItem = classes.find(c => c.id === assignment.classId);
+            
+            document.getElementById('assignmentSubmissionContent').innerHTML = `
+                <div>
+                    <h4 class="font-semibold text-lg mb-2">${assignment.title}</h4>
+                    <p class="text-gray-600 mb-4">${classItem.name} - ${classItem.subject}</p>
+                    
+                    <div class="mb-6 p-4 bg-green-50 rounded-lg">
+                        <h5 class="font-medium mb-2 text-green-800">Nilai Anda:</h5>
+                        <p class="text-2xl font-bold text-green-600">${assignment.grade}/${assignment.points}</p>
+                        <p class="text-sm text-green-700 mt-2">${getGradeMessage(assignment.grade, assignment.points)}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="font-medium mb-2">Feedback dari Guru:</h5>
+                        <p class="text-gray-700 p-3 bg-gray-50 rounded">${assignment.feedback || 'Tidak ada feedback'}</p>
+                    </div>
+                    
+                    ${assignment.submission ? `
+                        <div class="mb-4 p-3 bg-blue-50 rounded">
+                            <h5 class="font-medium mb-2">Pengumpulan Anda:</h5>
+                            <p class="text-sm"><strong>File:</strong> ${assignment.submission.file}</p>
+                            <p class="text-sm"><strong>Tanggal:</strong> ${formatDate(assignment.submission.date)}</p>
+                            <p class="text-sm"><strong>Catatan:</strong> ${assignment.submission.note || 'Tidak ada catatan'}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="flex justify-end">
+                        <button onclick="closeAssignmentSubmissionModal()" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('assignmentSubmissionModal').classList.remove('hidden');
+        }
+
+        // Calendar functions
+        function loadCalendar() {
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            
+            document.getElementById('currentMonth').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+            
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDay = firstDay.getDay();
+            
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+            
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < startingDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'h-20 border';
+                calendarGrid.appendChild(emptyCell);
+            }
+            
+            // Add cells for each day of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'h-20 border p-1';
+                
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayAssignments = assignments.filter(a => a.dueDate === dateStr);
+                
+                dayCell.innerHTML = `
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium">${day}</span>
+                        ${dayAssignments.length > 0 ? '<span class="text-red-500 text-xs">📝</span>' : ''}
+                    </div>
+                    <div class="mt-1 space-y-1">
+                        ${dayAssignments.slice(0, 2).map(assignment => `
+                            <div class="text-xs bg-blue-100 text-blue-800 px-1 rounded truncate">
+                                ${assignment.title}
+                            </div>
+                        `).join('')}
+                        ${dayAssignments.length > 2 ? `<div class="text-xs text-gray-500">+${dayAssignments.length - 2} lebih</div>` : ''}
+                    </div>
+                `;
+                
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            loadCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            loadCalendar();
+        }
+
+        // Video call functions
+        function startVideoCall(classId) {
+            const classItem = classes.find(c => c.id === classId);
+            if (!classItem) return;
+            
+            document.getElementById('videoCallModal').classList.remove('hidden');
+        }
+
+        function endVideoCall() {
+            document.getElementById('videoCallModal').classList.add('hidden');
+            document.getElementById('chatPanel').classList.add('hidden');
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('muteBtn').textContent = isMuted ? '🎤❌' : '🎤';
+            showNotification(isMuted ? 'Mikrofon dimatikan' : 'Mikrofon dinyalakan', 'info');
+        }
+
+        function toggleVideo() {
+            isVideoOn = !isVideoOn;
+            document.getElementById('videoBtn').textContent = isVideoOn ? '📹' : '📹❌';
+            showNotification(isVideoOn ? 'Kamera dinyalakan' : 'Kamera dimatikan', 'info');
+        }
+
+        function shareScreen() {
+            showNotification('Berbagi layar dimulai', 'info');
+        }
+
+        function toggleChat() {
+            document.getElementById('chatPanel').classList.toggle('hidden');
+        }
+
+        function sendChatMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (message) {
+                const chatMessages = document.getElementById('chatMessages');
+                const messageElement = document.createElement('div');
+                messageElement.className = 'text-sm';
+                messageElement.innerHTML = `
+                    <span class="font-medium text-green-600">Anda:</span>
+                    <span class="text-gray-700">${message}</span>
+                `;
+                chatMessages.appendChild(messageElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                chatInput.value = '';
+            }
+        }
+
+        // Notification functions
+        function toggleNotifications() {
+            document.getElementById('notificationDropdown').classList.toggle('hidden');
+        }
+
+        function toggleUserMenu() {
+            document.getElementById('userMenu').classList.toggle('hidden');
+        }
+
+        function loadNotifications() {
+            const notificationList = document.getElementById('notificationList');
+            notificationList.innerHTML = '';
+            
+            if (notifications.length === 0) {
+                notificationList.innerHTML = '<p class="p-4 text-center text-gray-500">Tidak ada notifikasi</p>';
+                return;
+            }
+            
+            notifications.slice().reverse().forEach(notification => {
+                const notificationElement = document.createElement('div');
+                notificationElement.className = `p-3 border-b ${getNotificationColor(notification.type)}`;
+                notificationElement.innerHTML = `
+                    <p class="font-medium">${notification.title}</p>
+                    <p class="text-sm text-gray-600">${notification.message}</p>
+                    <p class="text-xs text-gray-500 mt-1">${formatTime(notification.timestamp)}</p>
+                `;
+                notificationList.appendChild(notificationElement);
+            });
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            if (notifications.length > 0) {
+                badge.textContent = notifications.length > 9 ? '9+' : notifications.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notificationContainer = document.getElementById('notificationContainer');
+            const notificationId = Date.now();
+            
+            const notification = document.createElement('div');
+            notification.id = `notification-${notificationId}`;
+            notification.className = `p-4 rounded-lg shadow-lg border-l-4 ${getNotificationBorderColor(type)} bg-white notification-slide`;
+            notification.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-medium">${getNotificationTitle(type)}</p>
+                        <p class="text-sm text-gray-600">${message}</p>
+                    </div>
+                    <button onclick="dismissNotification(${notificationId})" class="text-gray-400 hover:text-gray-600">
+                        &times;
+                    </button>
+                </div>
+            `;
+            
+            notificationContainer.appendChild(notification);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                dismissNotification(notificationId);
+            }, 5000);
+        }
+
+        function addNotification(title, message, type = 'info') {
+            const notification = {
+                id: Date.now(),
+                title,
+                message,
+                type,
+                timestamp: new Date()
+            };
+            
+            notifications.push(notification);
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            
+            loadNotifications();
+            updateNotificationBadge();
+        }
+
+        function dismissNotification(notificationId) {
+            const notification = document.getElementById(`notification-${notificationId}`);
+            if (notification) {
+                notification.remove();
+            }
+        }
+
+        // Utility functions
+        function generateClassCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function getRandomColor() {
+            const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function formatDate(dateString) {
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            return new Date(dateString).toLocaleDateString('id-ID', options);
+        }
+
+        function formatTime(date) {
+            return new Date(date).toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'assigned': return 'text-yellow-600';
+                case 'submitted': return 'text-blue-600';
+                case 'graded': return 'text-green-600';
+                default: return 'text-gray-600';
+            }
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 'assigned': return 'Ditugaskan';
+                case 'submitted': return 'Dikumpulkan';
+                case 'graded': return 'Dinilai';
+                default: return status;
+            }
+        }
+
+        function getNotificationColor(type) {
+            switch (type) {
+                case 'success': return 'bg-green-50';
+                case 'error': return 'bg-red-50';
+                case 'warning': return 'bg-yellow-50';
+                default: return 'bg-blue-50';
+            }
+        }
+
+        function getNotificationBorderColor(type) {
+            switch (type) {
+                case 'success': return 'border-green-500';
+                case 'error': return 'border-red-500';
+                case 'warning': return 'border-yellow-500';
+                default: return 'border-blue-500';
+            }
+        }
+
+        function getNotificationTitle(type) {
+            switch (type) {
+                case 'success': return 'Berhasil';
+                case 'error': return 'Error';
+                case 'warning': return 'Peringatan';
+                default: return 'Info';
+            }
+        }
+
+        function getGradeMessage(grade, maxGrade) {
+            const percentage = (grade / maxGrade) * 100;
+            if (percentage >= 90) return 'Luar biasa! Kerja bagus!';
+            if (percentage >= 80) return 'Bagus! Pertahankan!';
+            if (percentage >= 70) return 'Cukup baik. Tingkatkan lagi!';
+            if (percentage >= 60) return 'Perlu perbaikan. Belajar lebih giat!';
+            return 'Perlu belajar lebih serius lagi!';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const userMenu = document.getElementById('userMenu');
+            if (!event.target.matches('.flex.items-center.space-x-2')) {
+                if (userMenu && !userMenu.classList.contains('hidden')) {
+                    userMenu.classList.add('hidden');
+                }
+            }
+            
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            if (!event.target.matches('.relative.p-2')) {
+                if (notificationDropdown && !notificationDropdown.classList.contains('hidden')) {
+                    notificationDropdown.classList.add('hidden');
+                }
+            }
+        }
+    </script>
+</body>
+</html> 10</h3>
+                        <button onclick="endVideoCall()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm">
+                            Akhiri
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="relative bg-gray-900 h-96">
+                    <!-- Main video area -->
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <div class="text-center text-white">
+                            <div class="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl">👨‍🏫</span>
+                            </div>
+                            <p class="text-lg font-medium">Pak Budi</p>
+                            <p class="text-sm text-gray-300">Guru Matematika</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Participant thumbnails -->
+                    <div class="absolute bottom-4 right-4 flex space-x-2">
+                        <div class="w-20 h-16 bg-gray-700 rounded border-2 border-blue-500 flex items-center justify-center">
+                            <span class="text-white text-sm">Anda</span>
+                        </div>
+                        <div class="w-20 h-16 bg-gray-700 rounded flex items-center justify-center">
+                            <span class="text-white text-xs">+23</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-gray-100">
+                    <div class="flex justify-center space-x-4">
+                        <button onclick="toggleMute()" id="muteBtn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full">
+                            🎤
+                        </button>
+                        <button onclick="toggleVideo()" id="videoBtn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full">
+                            📹
+                        </button>
+                        <button onclick="shareScreen()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full">
+                            🖥️
+                        </button>
+                        <button onclick="toggleChat()" class="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full">
+                            💬
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Chat Panel -->
+                <div id="chatPanel" class="hidden absolute right-0 top-0 bottom-0 w-80 bg-white border-l">
+                    <div class="p-4 border-b">
+                        <h4 class="font-semibold">Chat</h4>
+                    </div>
+                    <div id="chatMessages" class="flex-1 p-4 h-64 overflow-y-auto space-y-2">
+                        <div class="text-sm">
+                            <span class="font-medium text-blue-600">Pak Budi:</span>
+                            <span class="text-gray-700">Selamat datang di kelas online!</span>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t">
+                        <div class="flex space-x-2">
+                            <input type="text" id="chatInput" placeholder="Ketik pesan..." class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                            <button onclick="sendChatMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Kirim</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class Detail Modal -->
+    <div id="classDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto fade-in md:modal-mobile">
+                <div id="classDetailContent">
+                    <!-- Class detail content will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Class Modal -->
+    <div id="createClassModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Buat Kelas Baru</h3>
+                        <button onclick="closeCreateClassModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    <form onsubmit="createClass(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kelas</label>
+                                <input type="text" id="className" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Matematika Kelas 10">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Bagian</label>
+                                <input type="text" id="classSection" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: A">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
+                                <input type="text" id="classSubject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Matematika">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Ruangan</label>
+                                <input type="text" id="classRoom" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Ruang 101">
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" onclick="closeCreateClassModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Batal</button>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">Buat</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Class Modal -->
+    <div id="joinClassModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Gabung Kelas</h3>
+                        <button onclick="closeJoinClassModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    <form onsubmit="joinClass(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Kode Kelas</label>
+                                <input type="text" id="classCode" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan kode kelas">
+                                <p class="text-sm text-gray-500 mt-1">Minta kode kelas dari guru Anda</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" onclick="closeJoinClassModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Batal</button>
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">Gabung</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Students Modal -->
+    <div id="inviteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Undang Siswa</h3>
+                        <button onclick="closeInviteModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kode Kelas</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" id="inviteClassCode" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                                <button onclick="copyClassCode()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm">Salin</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Link Undangan</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" id="inviteLink" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+                                <button onclick="copyInviteLink()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm">Salin</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Undang via Email</label>
+                            <input type="email" id="inviteEmail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="email@contoh.com">
+                            <button onclick="sendEmailInvite()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm w-full">Kirim Undangan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Detail Modal -->
+    <div id="assignmentDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-screen overflow-y-auto fade-in">
+                <div id="assignmentDetailContent">
+                    <!-- Assignment detail content will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Assignment Modal -->
+    <div id="createAssignmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Buat Tugas Baru</h3>
+                        <button onclick="closeCreateAssignmentModal()" class="text-gray-400 hover:text-gray-600">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                    <form onsubmit="createAssignment(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Judul Tugas</label>
+                                <input type="text" id="assignmentTitle" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+                                <textarea id="assignmentDescription" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Jatuh Tempo</label>
+                                    <input type="date" id="assignmentDueDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Jatuh Tempo</label>
+                                    <input type="time" id="assignmentDueTime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Poin</label>
+                                <input type="number" id="assignmentPoints" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="100">
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" onclick="closeCreateAssignmentModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Batal</button>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">Buat Tugas</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let classes = [
+            {
+                id: 1,
+                name: "Matematika Kelas 10",
+                section: "A",
+                code: "MAT10A",
+                teacher: "Pak Budi",
+                students: 25,
+                color: "bg-blue-500",
+                assignments: [
+                    { id: 1, title: "Latihan Aljabar", dueDate: "2024-01-15", status: "assigned", points: 100, grade: 85 }
+                ],
+                announcements: [
+                    { id: 1, title: "Selamat datang!", content: "Mari belajar bersama!", date: "2024-01-10" }
+                ]
+            }
+        ];
+
+        let currentClassId = null;
+        let assignments = [];
+        let notifications = [];
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let isMuted = false;
+        let isVideoOn = true;
+        let isChatOpen = false;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            renderClasses();
+            updateAssignmentsList();
+            initializeNotifications();
+            renderGradebook();
+            setupDragAndDrop();
+        });
+
+        // Notification System
+        function initializeNotifications() {
+            // Simulate some initial notifications
+            addNotification('Tugas baru: Latihan Aljabar', 'info');
+            addNotification('Kelas dimulai dalam 30 menit', 'warning');
+            updateNotificationBadge();
+        }
+
+        function addNotification(message, type = 'info') {
+            const notification = {
+                id: Date.now(),
+                message: message,
+                type: type,
+                timestamp: new Date(),
+                read: false
+            };
+            
+            notifications.unshift(notification);
+            showNotificationToast(notification);
+            updateNotificationBadge();
+            updateNotificationDropdown();
+        }
+
+        function showNotificationToast(notification) {
+            const container = document.getElementById('notificationContainer');
+            const toast = document.createElement('div');
+            toast.className = `notification-slide bg-white border-l-4 ${getNotificationColor(notification.type)} rounded-lg shadow-lg p-4 max-w-sm`;
+            
+            toast.innerHTML = `
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <span class="text-lg">${getNotificationIcon(notification.type)}</span>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-medium text-gray-900">${notification.message}</p>
+                        <p class="text-xs text-gray-500 mt-1">${formatTime(notification.timestamp)}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-gray-400 hover:text-gray-600">
+                        <span class="text-lg">&times;</span>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        function getNotificationColor(type) {
+            switch(type) {
+                case 'success': return 'border-green-400';
+                case 'warning': return 'border-yellow-400';
+                case 'error': return 'border-red-400';
+                default: return 'border-blue-400';
+            }
+        }
+
+        function getNotificationIcon(type) {
+            switch(type) {
+                case 'success': return '✅';
+                case 'warning': return '⚠️';
+                case 'error': return '❌';
+                default: return 'ℹ️';
+            }
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            const unreadCount = notifications.filter(n => !n.read).length;
+            
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.classList.remove('hidden');
+                badge.classList.add('pulse-notification');
+            } else {
+                badge.classList.add('hidden');
+                badge.classList.remove('pulse-notification');
+            }
+        }
+
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('hidden');
+            
+            if (!dropdown.classList.contains('hidden')) {
+                updateNotificationDropdown();
+            }
+        }
+
+        function updateNotificationDropdown() {
+            const list = document.getElementById('notificationList');
+            
+            if (notifications.length === 0) {
+                list.innerHTML = '<div class="p-4 text-center text-gray-500">Tidak ada notifikasi</div>';
+                return;
+            }
+            
+            list.innerHTML = notifications.slice(0, 10).map(notification => `
+                <div class="p-3 hover:bg-gray-50 border-b ${!notification.read ? 'bg-blue-50' : ''}">
+                    <div class="flex items-start space-x-2">
+                        <span class="text-sm">${getNotificationIcon(notification.type)}</span>
+                        <div class="flex-1">
+                            <p class="text-sm ${!notification.read ? 'font-medium' : ''}">${notification.message}</p>
+                            <p class="text-xs text-gray-500">${formatTime(notification.timestamp)}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Mark as read when dropdown is opened
+            notifications.forEach(n => n.read = true);
+            updateNotificationBadge();
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            
+            if (minutes < 1) return 'Baru saja';
+            if (minutes < 60) return `${minutes} menit lalu`;
+            if (minutes < 1440) return `${Math.floor(minutes / 60)} jam lalu`;
+            return date.toLocaleDateString('id-ID');
+        }
+
+        // Enhanced Calendar
+        function loadCalendar() {
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const calendarGrid = document.getElementById('calendarGrid');
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            document.getElementById('currentMonth').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+            
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const today = new Date();
+            
+            calendarGrid.innerHTML = '';
+            
+            // Empty cells for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'h-24 border border-gray-200';
+                calendarGrid.appendChild(emptyDay);
+            }
+            
+            // Days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'h-24 border border-gray-200 p-1 hover:bg-gray-50 cursor-pointer';
+                
+                const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+                const hasEvent = Math.random() > 0.8; // Simulate some events
+                
+                dayCell.innerHTML = `
+                    <div class="text-sm ${isToday ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}">${day}</div>
+                    ${hasEvent ? '<div class="w-2 h-2 bg-red-500 rounded-full mt-1"></div>' : ''}
+                `;
+                
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        }
+
+        // Gradebook System
+        function renderGradebook() {
+            const gradesList = document.getElementById('gradesList');
+            const grades = [];
+            
+            // Collect all assignments with grades
+            classes.forEach(classItem => {
+                classItem.assignments.forEach(assignment => {
+                    if (assignment.grade) {
+                        grades.push({
+                            ...assignment,
+                            className: classItem.name,
+                            classColor: classItem.color
+                        });
+                    }
+                });
+            });
+            
+            if (grades.length === 0) {
+                gradesList.innerHTML = '<div class="text-center text-gray-500 py-8">Belum ada nilai</div>';
+                return;
+            }
+            
+            gradesList.innerHTML = grades.map(grade => `
+                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="${grade.classColor} w-4 h-4 rounded-full"></div>
+                            <div>
+                                <h4 class="font-medium">${grade.title}</h4>
+                                <p class="text-sm text-gray-500">${grade.className}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold ${getGradeColor(grade.grade)}">${grade.grade}</div>
+                            <div class="text-sm text-gray-500">${grade.points} poin</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="${getGradeProgressColor(grade.grade)} h-2 rounded-full grade-progress" style="width: ${grade.grade}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update statistics
+            const average = grades.reduce((sum, grade) => sum + grade.grade, 0) / grades.length;
+            document.getElementById('overallAverage').textContent = `${Math.round(average)}%`;
+            document.getElementById('overallProgress').style.width = `${average}%`;
+        }
+
+        function getGradeColor(grade) {
+            if (grade >= 90) return 'text-green-600';
+            if (grade >= 80) return 'text-blue-600';
+            if (grade >= 70) return 'text-yellow-600';
+            return 'text-red-600';
+        }
+
+        function getGradeProgressColor(grade) {
+            if (grade >= 90) return 'bg-green-600';
+            if (grade >= 80) return 'bg-blue-600';
+            if (grade >= 70) return 'bg-yellow-600';
+            return 'bg-red-600';
+        }
+
+        // Video Call System
+        function startVideoCall(classId) {
+            document.getElementById('videoCallModal').classList.remove('hidden');
+            addNotification('Video call dimulai', 'success');
+        }
+
+        function endVideoCall() {
+            document.getElementById('videoCallModal').classList.add('hidden');
+            addNotification('Video call berakhir', 'info');
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('muteBtn');
+            btn.innerHTML = isMuted ? '🔇' : '🎤';
+            btn.className = isMuted ? 'bg-red-600 hover:bg-red-700 text-white p-3 rounded-full' : 'bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full';
+        }
+
+        function toggleVideo() {
+            isVideoOn = !isVideoOn;
+            const btn = document.getElementById('videoBtn');
+            btn.innerHTML = isVideoOn ? '📹' : '📹';
+            btn.className = isVideoOn ? 'bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full' : 'bg-red-600 hover:bg-red-700 text-white p-3 rounded-full';
+        }
+
+        function shareScreen() {
+            addNotification('Screen sharing dimulai', 'info');
+        }
+
+        function toggleChat() {
+            const chatPanel = document.getElementById('chatPanel');
+            chatPanel.classList.toggle('hidden');
+            isChatOpen = !isChatOpen;
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                const chatMessages = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'text-sm';
+                messageDiv.innerHTML = `
+                    <span class="font-medium text-green-600">Anda:</span>
+                    <span class="text-gray-700">${message}</span>
+                `;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                input.value = '';
+            }
+        }
+
+        // Enhanced Navigation
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            
+            // Update desktop navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-gray-900');
+                btn.classList.add('text-gray-500');
+            });
+            
+            // Update mobile navigation buttons
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                btn.classList.remove('text-blue-600');
+                btn.classList.add('text-gray-500');
+            });
+            
+            // Highlight active button
+            const activeDesktopBtn = document.querySelector(`.nav-btn[onclick*="${sectionName}"]`);
+            const activeMobileBtn = document.querySelector(`.mobile-nav-btn[onclick*="${sectionName}"]`);
+            
+            if (activeDesktopBtn) {
+                activeDesktopBtn.classList.remove('text-gray-500');
+                activeDesktopBtn.classList.add('text-gray-900');
+            }
+            
+            if (activeMobileBtn) {
+                activeMobileBtn.classList.remove('text-gray-500');
+                activeMobileBtn.classList.add('text-blue-600');
+            }
+        }
+
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Class management functions
+        function renderClasses() {
+            const classesList = document.getElementById('classesList');
+            classesList.innerHTML = '';
+
+            classes.forEach(classItem => {
+                const classCard = document.createElement('div');
+                classCard.className = 'bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer';
+                classCard.onclick = () => openClassDetail(classItem.id);
+                
+                classCard.innerHTML = `
+                    <div class="${classItem.color} h-24 rounded-t-lg relative">
+                        <div class="absolute top-4 left-4 text-white">
+                            <h3 class="text-lg font-semibold">${classItem.name}</h3>
+                            <p class="text-sm opacity-90">${classItem.section}</p>
+                        </div>
+                        <div class="absolute top-4 right-4 flex space-x-1">
+                            <button onclick="event.stopPropagation(); startVideoCall(${classItem.id})" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1" title="Mulai Video Call">
+                                <span class="text-lg">📹</span>
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteClass(${classItem.id})" class="text-white hover:bg-red-500 hover:bg-opacity-80 rounded-full p-1" title="Hapus Kelas">
+                                <span class="text-lg">🗑️</span>
+                            </button>
+                            <button onclick="event.stopPropagation(); openClassMenu(${classItem.id})" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
+                                <span class="text-xl">⋮</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-gray-600 text-sm mb-2">${classItem.teacher}</p>
+                        <p class="text-gray-500 text-xs">${classItem.students} siswa</p>
+                    </div>
+                `;
+                
+                classesList.appendChild(classCard);
+            });
+        }
+
+        function openCreateClassModal() {
+            document.getElementById('createClassModal').classList.remove('hidden');
+        }
+
+        function closeCreateClassModal() {
+            document.getElementById('createClassModal').classList.add('hidden');
+            document.getElementById('className').value = '';
+            document.getElementById('classSection').value = '';
+            document.getElementById('classSubject').value = '';
+            document.getElementById('classRoom').value = '';
+        }
+
+        function createClass(event) {
+            event.preventDefault();
+            
+            const newClass = {
+                id: classes.length + 1,
+                name: document.getElementById('className').value,
+                section: document.getElementById('classSection').value,
+                subject: document.getElementById('classSubject').value,
+                room: document.getElementById('classRoom').value,
+                code: generateClassCode(),
+                teacher: "Anda",
+                students: 0,
+                color: getRandomColor(),
+                assignments: [],
+                announcements: []
+            };
+            
+            classes.push(newClass);
+            renderClasses();
+            closeCreateClassModal();
+            
+            addNotification(`Kelas ${newClass.name} berhasil dibuat!`, 'success');
+        }
+
+        function openJoinClassModal() {
+            document.getElementById('joinClassModal').classList.remove('hidden');
+        }
+
+        function closeJoinClassModal() {
+            document.getElementById('joinClassModal').classList.add('hidden');
+            document.getElementById('classCode').value = '';
+        }
+
+        function joinClass(event) {
+            event.preventDefault();
+            const code = document.getElementById('classCode').value;
+            
+            // Simulate joining a class
+            const existingClass = classes.find(c => c.code === code);
+            if (existingClass) {
+                addNotification('Berhasil bergabung dengan kelas!', 'success');
+            } else {
+                addNotification('Kode kelas tidak ditemukan. Silakan periksa kembali.', 'error');
+            }
+            
+            closeJoinClassModal();
+        }
+
+        function generateClassCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function getRandomColor() {
+            const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-red-500', 'bg-yellow-500', 'bg-indigo-500'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function deleteClass(classId) {
+            const classToDelete = classes.find(c => c.id === classId);
+            const className = classToDelete ? classToDelete.name : 'Kelas';
+            
+            if (confirm(`Apakah Anda yakin ingin menghapus "${className}"? Semua tugas dan data akan terhapus.`)) {
+                classes = classes.filter(c => c.id !== classId);
+                renderClasses();
+                updateAssignmentsList();
+                renderGradebook();
+                
+                // Close class detail modal if it's open for this class
+                if (currentClassId === classId) {
+                    closeClassDetail();
+                }
+                
+                addNotification(`Kelas "${className}" berhasil dihapus!`, 'success');
+            }
+        }
+
+        // Class detail functions with comments system
+        function openClassDetail(classId) {
+            currentClassId = classId;
+            const classItem = classes.find(c => c.id === classId);
+            
+            const modal = document.getElementById('classDetailModal');
+            const content = document.getElementById('classDetailContent');
+            
+            content.innerHTML = `
+                <div class="${classItem.color} h-32 relative">
+                    <button onclick="closeClassDetail()" class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2">
+                        <span class="text-xl">&times;</span>
+                    </button>
+                    <div class="absolute bottom-4 left-6 text-white">
+                        <h2 class="text-2xl font-bold">${classItem.name}</h2>
+                        <p class="text-lg opacity-90">${classItem.section}</p>
+                    </div>
+                    <button onclick="startVideoCall(${classId})" class="absolute bottom-4 right-6 bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm">
+                        📹 Mulai Video Call
+                    </button>
+                </div>
+                
+                <div class="p-6">
+                    <div class="flex space-x-4 mb-6 border-b">
+                        <button onclick="showClassTab('stream')" class="class-tab-btn border-b-2 border-blue-500 text-blue-600 pb-2 px-1">Stream</button>
+                        <button onclick="showClassTab('classwork')" class="class-tab-btn text-gray-500 hover:text-gray-700 pb-2 px-1">Tugas Kelas</button>
+                        <button onclick="showClassTab('people')" class="class-tab-btn text-gray-500 hover:text-gray-700 pb-2 px-1">Orang</button>
+                        <button onclick="showClassTab('grades')" class="class-tab-btn text-gray-500 hover:text-gray-700 pb-2 px-1">Nilai</button>
+                    </div>
+                    
+                    <div id="streamTab" class="class-tab-content">
+                        <div class="mb-6">
+                            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                                <textarea id="postContent" placeholder="Bagikan sesuatu dengan kelas Anda..." class="w-full bg-transparent resize-none focus:outline-none" rows="3"></textarea>
+                                
+                                <!-- File Upload Area -->
+                                <div id="uploadArea" class="hidden mt-3 p-3 border-2 border-dashed border-gray-300 rounded-lg">
+                                    <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.txt" class="hidden" onchange="handleFileSelect(event)">
+                                    <div class="text-center">
+                                        <p class="text-gray-500 text-sm mb-2">Seret file ke sini atau klik untuk memilih</p>
+                                        <button onclick="document.getElementById('fileInput').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">Pilih File</button>
+                                    </div>
+                                    <div id="selectedFiles" class="mt-3 space-y-2"></div>
+                                </div>
+                                
+                                <!-- Photo Upload Area -->
+                                <div id="photoArea" class="hidden mt-3 p-3 border-2 border-dashed border-gray-300 rounded-lg">
+                                    <input type="file" id="photoInput" multiple accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
+                                    <div class="text-center">
+                                        <p class="text-gray-500 text-sm mb-2">Pilih foto untuk dibagikan</p>
+                                        <button onclick="document.getElementById('photoInput').click()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm">Pilih Foto</button>
+                                    </div>
+                                    <div id="selectedPhotos" class="mt-3 grid grid-cols-3 gap-2"></div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center mt-3">
+                                    <div class="flex space-x-2">
+                                        <button onclick="toggleFileUpload()" class="text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-200" title="Lampirkan File">
+                                            📎
+                                        </button>
+                                        <button onclick="togglePhotoUpload()" class="text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-200" title="Bagikan Foto">
+                                            📷
+                                        </button>
+                                        <button onclick="openCreateAssignmentModal()" class="text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-200" title="Buat Tugas">
+                                            📝
+                                        </button>
+                                    </div>
+                                    <button onclick="postToClass()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">Posting</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            ${classItem.announcements.map(announcement => `
+                                <div class="bg-white border rounded-lg p-4">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+                                            ${classItem.teacher.charAt(0)}
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span class="font-medium">${classItem.teacher}</span>
+                                                <span class="text-gray-500 text-sm">${announcement.date}</span>
+                                            </div>
+                                            <h4 class="font-medium mb-2">${announcement.title}</h4>
+                                            <p class="text-gray-700 mb-3">${announcement.content}</p>
+                                            
+                                            ${announcement.files && announcement.files.length > 0 ? `
+                                                <div class="mb-3">
+                                                    <h5 class="text-sm font-medium text-gray-600 mb-2">File Lampiran:</h5>
+                                                    <div class="space-y-2">
+                                                        ${announcement.files.map(file => `
+                                                            <div class="flex items-center space-x-2 bg-gray-50 p-2 rounded">
+                                                                <span class="text-lg">${getFileIcon(file.type)}</span>
+                                                                <div class="flex-1">
+                                                                    <p class="text-sm font-medium">${file.name}</p>
+                                                                    <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                                                                </div>
+                                                                <button class="text-blue-600 hover:text-blue-800 text-sm">Unduh</button>
+                                                            </div>
+                                                        `).join('')}
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                            
+                                            ${announcement.photos && announcement.photos.length > 0 ? `
+                                                <div class="mb-3">
+                                                    <h5 class="text-sm font-medium text-gray-600 mb-2">Foto:</h5>
+                                                    <div class="grid grid-cols-3 gap-2">
+                                                        ${announcement.photos.map(photo => `
+                                                            <div class="relative group cursor-pointer">
+                                                                <div class="w-full h-20 bg-gray-200 rounded flex items-center justify-center">
+                                                                    <span class="text-2xl">📷</span>
+                                                                </div>
+                                                                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    ${photo.name}
+                                                                </div>
+                                                            </div>
+                                                        `).join('')}
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                            
+                                            <!-- Comments Section -->
+                                            <div class="border-t pt-3 mt-3">
+                                                <div class="flex items-center space-x-2 mb-2">
+                                                    <button onclick="toggleComments(${announcement.id})" class="text-gray-500 hover:text-gray-700 text-sm flex items-center space-x-1">
+                                                        <span>💬</span>
+                                                        <span>Komentar</span>
+                                                    </button>
+                                                    <button class="text-gray-500 hover:text-gray-700 text-sm flex items-center space-x-1">
+                                                        <span>👍</span>
+                                                        <span>Suka</span>
+                                                    </button>
+                                                </div>
+                                                <div id="comments-${announcement.id}" class="hidden mt-3">
+                                                    <div class="space-y-2 mb-3">
+                                                        <div class="flex items-start space-x-2">
+                                                            <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">
+                                                                S
+                                                            </div>
+                                                            <div class="flex-1 bg-gray-50 rounded-lg p-2">
+                                                                <p class="text-sm"><span class="font-medium">Siswa 1:</span> Terima kasih atas materinya, Pak!</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex space-x-2">
+                                                        <input type="text" placeholder="Tulis komentar..." class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                                                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Kirim</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div id="classworkTab" class="class-tab-content hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">Tugas Kelas</h3>
+                            <button onclick="openCreateAssignmentModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">+ Buat</button>
+                        </div>
+                        <div class="space-y-3">
+                            ${classItem.assignments.map(assignment => `
+                                <div class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="openAssignmentDetail(${assignment.id}, ${classId})">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                                📝
+                                            </div>
+                                            <div>
+                                                <h4 class="font-medium">${assignment.title}</h4>
+                                                <p class="text-sm text-gray-500">Jatuh tempo: ${assignment.dueDate}</p>
+                                                ${assignment.description ? `<p class="text-sm text-gray-600 mt-1">${assignment.description.substring(0, 100)}${assignment.description.length > 100 ? '...' : ''}</p>` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm text-gray-500">${assignment.points} poin</span>
+                                            <span class="px-2 py-1 rounded-full text-xs ${getStatusColor(assignment.status)}">${getStatusText(assignment.status)}</span>
+                                            <button onclick="event.stopPropagation(); deleteAssignment(${assignment.id}, ${classId})" class="text-red-500 hover:text-red-700 p-1" title="Hapus Tugas">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div id="peopleTab" class="class-tab-content hidden">
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold">Guru</h3>
+                                </div>
+                                <div class="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg">
+                                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+                                        ${classItem.teacher.charAt(0)}
+                                    </div>
+                                    <span class="font-medium">${classItem.teacher}</span>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold">Siswa</h3>
+                                    <button onclick="openInviteModal(${classId})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">Undang</button>
+                                </div>
+                                <div class="text-gray-500 text-center py-8">
+                                    ${classItem.students} siswa terdaftar
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="gradesTab" class="class-tab-content hidden">
+                        <h3 class="text-lg font-semibold mb-4">Nilai Kelas</h3>
+                        <div class="space-y-4">
+                            ${classItem.assignments.filter(a => a.grade).map(assignment => `
+                                <div class="bg-white border rounded-lg p-4">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h4 class="font-medium">${assignment.title}</h4>
+                                            <p class="text-sm text-gray-500">${assignment.points} poin</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-2xl font-bold ${getGradeColor(assignment.grade)}">${assignment.grade}</div>
+                                            <div class="text-sm text-gray-500">dari 100</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="${getGradeProgressColor(assignment.grade)} h-2 rounded-full grade-progress" style="width: ${assignment.grade}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+
+        function toggleComments(announcementId) {
+            const commentsDiv = document.getElementById(`comments-${announcementId}`);
+            commentsDiv.classList.toggle('hidden');
+        }
+
+        function closeClassDetail() {
+            document.getElementById('classDetailModal').classList.add('hidden');
+            currentClassId = null;
+        }
+
+        function showClassTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.class-tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            // Update tab buttons
+            document.querySelectorAll('.class-tab-btn').forEach(btn => {
+                btn.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600');
+                btn.classList.add('text-gray-500', 'hover:text-gray-700');
+            });
+            event.target.classList.remove('text-gray-500', 'hover:text-gray-700');
+            event.target.classList.add('border-b-2', 'border-blue-500', 'text-blue-600');
+        }
+
+        // Invite functions
+        function openInviteModal(classId) {
+            const classItem = classes.find(c => c.id === classId);
+            document.getElementById('inviteClassCode').value = classItem.code;
+            document.getElementById('inviteLink').value = `https://educlass.com/join/${classItem.code}`;
+            document.getElementById('inviteModal').classList.remove('hidden');
+        }
+
+        function closeInviteModal() {
+            document.getElementById('inviteModal').classList.add('hidden');
+        }
+
+        function copyClassCode() {
+            const codeInput = document.getElementById('inviteClassCode');
+            codeInput.select();
+            document.execCommand('copy');
+            addNotification('Kode kelas berhasil disalin!', 'success');
+        }
+
+        function copyInviteLink() {
+            const linkInput = document.getElementById('inviteLink');
+            linkInput.select();
+            document.execCommand('copy');
+            addNotification('Link undangan berhasil disalin!', 'success');
+        }
+
+        function sendEmailInvite() {
+            const email = document.getElementById('inviteEmail').value;
+            if (email) {
+                addNotification(`Undangan berhasil dikirim ke ${email}!`, 'success');
+                document.getElementById('inviteEmail').value = '';
+            } else {
+                addNotification('Silakan masukkan alamat email.', 'error');
+            }
+        }
+
+        // Assignment functions
+        function openCreateAssignmentModal() {
+            document.getElementById('createAssignmentModal').classList.remove('hidden');
+        }
+
+        function closeCreateAssignmentModal() {
+            document.getElementById('createAssignmentModal').classList.add('hidden');
+        }
+
+        function createAssignment(event) {
+            event.preventDefault();
+            
+            const newAssignment = {
+                id: Date.now(),
+                title: document.getElementById('assignmentTitle').value,
+                description: document.getElementById('assignmentDescription').value,
+                dueDate: document.getElementById('assignmentDueDate').value,
+                dueTime: document.getElementById('assignmentDueTime').value,
+                points: document.getElementById('assignmentPoints').value || 100,
+                status: 'assigned',
+                classId: currentClassId
+            };
+            
+            // Add to class assignments
+            const classItem = classes.find(c => c.id === currentClassId);
+            classItem.assignments.push(newAssignment);
+            
+            // Refresh class detail view
+            openClassDetail(currentClassId);
+            closeCreateAssignmentModal();
+            
+            addNotification(`Tugas "${newAssignment.title}" berhasil dibuat!`, 'success');
+        }
+
+        function deleteAssignment(assignmentId, classId) {
+            const classItem = classes.find(c => c.id === classId);
+            const assignmentToDelete = classItem.assignments.find(a => a.id === assignmentId);
+            const assignmentTitle = assignmentToDelete ? assignmentToDelete.title : 'Tugas';
+            
+            if (confirm(`Apakah Anda yakin ingin menghapus tugas "${assignmentTitle}"?`)) {
+                classItem.assignments = classItem.assignments.filter(a => a.id !== assignmentId);
+                
+                // Refresh class detail view
+                openClassDetail(classId);
+                updateAssignmentsList();
+                renderGradebook();
+                
+                addNotification(`Tugas "${assignmentTitle}" berhasil dihapus!`, 'success');
+            }
+        }
+
+        function deleteAssignmentFromList(assignmentId) {
+            // Find the assignment to get its title
+            let assignmentTitle = 'Tugas';
+            classes.forEach(classItem => {
+                const assignment = classItem.assignments.find(a => a.id === assignmentId);
+                if (assignment) {
+                    assignmentTitle = assignment.title;
+                }
+            });
+            
+            if (confirm(`Apakah Anda yakin ingin menghapus tugas "${assignmentTitle}"?`)) {
+                // Find and remove assignment from the appropriate class
+                classes.forEach(classItem => {
+                    classItem.assignments = classItem.assignments.filter(a => a.id !== assignmentId);
+                });
+                
+                updateAssignmentsList();
+                renderGradebook();
+                addNotification(`Tugas "${assignmentTitle}" berhasil dihapus!`, 'success');
+            }
+        }
+
+        function updateAssignmentsList() {
+            assignments = [];
+            classes.forEach(classItem => {
+                classItem.assignments.forEach(assignment => {
+                    assignments.push({
+                        ...assignment,
+                        className: classItem.name,
+                        classId: classItem.id
+                    });
+                });
+            });
+            
+            renderAssignments();
+        }
+
+        // Assignment Detail Functions
+        function openAssignmentDetail(assignmentId, classId) {
+            const classItem = classes.find(c => c.id === classId);
+            const assignment = classItem.assignments.find(a => a.id === assignmentId);
+            
+            if (!assignment) {
+                addNotification('Tugas tidak ditemukan!', 'error');
+                return;
+            }
+            
+            const modal = document.getElementById('assignmentDetailModal');
+            const content = document.getElementById('assignmentDetailContent');
+            
+            const dueDateTime = assignment.dueTime ? `${assignment.dueDate} ${assignment.dueTime}` : assignment.dueDate;
+            const isOverdue = new Date(assignment.dueDate) < new Date();
+            
+            content.innerHTML = `
+                <div class="bg-blue-600 text-white p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-2">${assignment.title}</h2>
+                            <p class="text-blue-100">${classItem.name} • ${assignment.points} poin</p>
+                        </div>
+                        <button onclick="closeAssignmentDetail()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2">
+                            <span class="text-xl">&times;</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Assignment Info -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <div>
+                                <h3 class="text-lg font-semibold mb-3">Deskripsi Tugas</h3>
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <p class="text-gray-700 whitespace-pre-wrap">${assignment.description || 'Tidak ada deskripsi untuk tugas ini.'}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- File Attachments -->
+                            ${assignment.attachments && assignment.attachments.length > 0 ? `
+                                <div>
+                                    <h3 class="text-lg font-semibold mb-3">File Lampiran</h3>
+                                    <div class="space-y-2">
+                                        ${assignment.attachments.map(file => `
+                                            <div class="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg">
+                                                <span class="text-2xl">${getFileIcon(file.type)}</span>
+                                                <div class="flex-1">
+                                                    <p class="font-medium">${file.name}</p>
+                                                    <p class="text-sm text-gray-500">${formatFileSize(file.size)}</p>
+                                                </div>
+                                                <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                                                    Unduh
+                                                </button>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Submission Area -->
+                            <div>
+                                <h3 class="text-lg font-semibold mb-3">Pengumpulan Tugas</h3>
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                    <div class="mb-4">
+                                        <span class="text-4xl text-gray-400">📄</span>
+                                    </div>
+                                    <p class="text-gray-600 mb-4">Seret file ke sini atau klik untuk memilih</p>
+                                    <input type="file" id="submissionFile" multiple class="hidden" onchange="handleSubmissionFiles(event)">
+                                    <button onclick="document.getElementById('submissionFile').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                        Pilih File
+                                    </button>
+                                    <div id="submissionFiles" class="mt-4 space-y-2"></div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Komentar Pribadi (Opsional)</label>
+                                    <textarea id="submissionComment" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Tambahkan komentar untuk guru..."></textarea>
+                                </div>
+                                
+                                <div class="mt-4 flex justify-end space-x-3">
+                                    <button onclick="saveAsDraft(${assignmentId}, ${classId})" class="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md">
+                                        Simpan Draft
+                                    </button>
+                                    <button onclick="submitAssignment(${assignmentId}, ${classId})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                        Kumpulkan Tugas
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Assignment Details Sidebar -->
+                        <div class="space-y-4">
+                            <div class="bg-white border rounded-lg p-4">
+                                <h4 class="font-semibold mb-3">Detail Tugas</h4>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Poin:</span>
+                                        <span class="font-medium">${assignment.points}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Jatuh Tempo:</span>
+                                        <span class="font-medium ${isOverdue ? 'text-red-600' : ''}">${dueDateTime}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Status:</span>
+                                        <span class="px-2 py-1 rounded-full text-xs ${getStatusColor(assignment.status)}">${getStatusText(assignment.status)}</span>
+                                    </div>
+                                    ${assignment.grade ? `
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Nilai:</span>
+                                            <span class="font-medium text-lg ${getGradeColor(assignment.grade)}">${assignment.grade}/100</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            ${isOverdue && assignment.status !== 'done' ? `
+                                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div class="flex items-center space-x-2 text-red-800">
+                                        <span>⚠️</span>
+                                        <span class="font-medium">Terlambat</span>
+                                    </div>
+                                    <p class="text-red-700 text-sm mt-1">Tugas ini sudah melewati batas waktu pengumpulan.</p>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-semibold mb-2">Kelas</h4>
+                                <div class="flex items-center space-x-2">
+                                    <div class="${classItem.color} w-4 h-4 rounded-full"></div>
+                                    <span class="text-sm">${classItem.name}</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-1">${classItem.teacher}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeAssignmentDetail() {
+            document.getElementById('assignmentDetailModal').classList.add('hidden');
+        }
+
+        let submissionFiles = [];
+
+        function handleSubmissionFiles(event) {
+            const files = Array.from(event.target.files);
+            submissionFiles = [...submissionFiles, ...files];
+            displaySubmissionFiles();
+        }
+
+        function displaySubmissionFiles() {
+            const container = document.getElementById('submissionFiles');
+            container.innerHTML = '';
+            
+            submissionFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'flex items-center justify-between bg-white p-3 rounded border';
+                fileItem.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="text-lg">${getFileIcon(file.type)}</span>
+                        <div>
+                            <p class="text-sm font-medium">${file.name}</p>
+                            <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                        </div>
+                    </div>
+                    <button onclick="removeSubmissionFile(${index})" class="text-red-500 hover:text-red-700 text-sm">
+                        Hapus
+                    </button>
+                `;
+                container.appendChild(fileItem);
+            });
+        }
+
+        function removeSubmissionFile(index) {
+            submissionFiles.splice(index, 1);
+            displaySubmissionFiles();
+        }
+
+        function saveAsDraft(assignmentId, classId) {
+            addNotification('Draft berhasil disimpan!', 'success');
+        }
+
+        function submitAssignment(assignmentId, classId) {
+            if (submissionFiles.length === 0) {
+                if (!confirm('Anda belum melampirkan file. Apakah yakin ingin mengumpulkan tugas kosong?')) {
+                    return;
+                }
+            }
+            
+            // Update assignment status
+            const classItem = classes.find(c => c.id === classId);
+            const assignment = classItem.assignments.find(a => a.id === assignmentId);
+            assignment.status = 'done';
+            assignment.submittedAt = new Date().toISOString();
+            assignment.submissionFiles = submissionFiles.map(f => ({ name: f.name, size: f.size, type: f.type }));
+            assignment.submissionComment = document.getElementById('submissionComment').value;
+            
+            // Clear submission data
+            submissionFiles = [];
+            
+            // Close modal and refresh
+            closeAssignmentDetail();
+            updateAssignmentsList();
+            renderGradebook();
+            
+            addNotification('Tugas berhasil dikumpulkan!', 'success');
+        }
+
+        function renderAssignments() {
+            const assignmentsList = document.getElementById('assignmentsList');
+            assignmentsList.innerHTML = '';
+            
+            if (assignments.length === 0) {
+                assignmentsList.innerHTML = '<div class="text-center text-gray-500 py-8">Belum ada tugas</div>';
+                return;
+            }
+            
+            assignments.forEach(assignment => {
+                const assignmentItem = document.createElement('div');
+                assignmentItem.className = 'border-b border-gray-200 py-4 last:border-b-0 cursor-pointer hover:bg-gray-50';
+                assignmentItem.onclick = () => openAssignmentDetail(assignment.id, assignment.classId);
+                assignmentItem.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                📝
+                            </div>
+                            <div>
+                                <h4 class="font-medium">${assignment.title}</h4>
+                                <p class="text-sm text-gray-500">${assignment.className} • Jatuh tempo: ${assignment.dueDate}</p>
+                                ${assignment.description ? `<p class="text-sm text-gray-600 mt-1">${assignment.description.substring(0, 80)}${assignment.description.length > 80 ? '...' : ''}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500">${assignment.points} poin</span>
+                            <span class="px-2 py-1 rounded-full text-xs ${getStatusColor(assignment.status)}">${getStatusText(assignment.status)}</span>
+                            <button onclick="event.stopPropagation(); deleteAssignmentFromList(${assignment.id})" class="text-red-500 hover:text-red-700 p-1" title="Hapus Tugas">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+                assignmentsList.appendChild(assignmentItem);
+            });
+        }
+
+        function filterAssignments(filter) {
+            // Update filter buttons
+            document.querySelectorAll('.assignment-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'text-blue-800');
+                btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+            });
+            event.target.classList.remove('text-gray-600', 'hover:bg-gray-100');
+            event.target.classList.add('bg-blue-100', 'text-blue-800');
+            
+            // Filter assignments
+            let filteredAssignments = assignments;
+            if (filter !== 'all') {
+                filteredAssignments = assignments.filter(a => a.status === filter);
+            }
+            
+            // Render filtered assignments
+            const assignmentsList = document.getElementById('assignmentsList');
+            assignmentsList.innerHTML = '';
+            
+            if (filteredAssignments.length === 0) {
+                assignmentsList.innerHTML = '<div class="text-center text-gray-500 py-8">Tidak ada tugas</div>';
+                return;
+            }
+            
+            filteredAssignments.forEach(assignment => {
+                const assignmentItem = document.createElement('div');
+                assignmentItem.className = 'border-b border-gray-200 py-4 last:border-b-0 cursor-pointer hover:bg-gray-50';
+                assignmentItem.onclick = () => openAssignmentDetail(assignment.id, assignment.classId);
+                assignmentItem.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                📝
+                            </div>
+                            <div>
+                                <h4 class="font-medium">${assignment.title}</h4>
+                                <p class="text-sm text-gray-500">${assignment.className} • Jatuh tempo: ${assignment.dueDate}</p>
+                                ${assignment.description ? `<p class="text-sm text-gray-600 mt-1">${assignment.description.substring(0, 80)}${assignment.description.length > 80 ? '...' : ''}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500">${assignment.points} poin</span>
+                            <span class="px-2 py-1 rounded-full text-xs ${getStatusColor(assignment.status)}">${getStatusText(assignment.status)}</span>
+                            <button onclick="event.stopPropagation(); deleteAssignmentFromList(${assignment.id})" class="text-red-500 hover:text-red-700 p-1" title="Hapus Tugas">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+                assignmentsList.appendChild(assignmentItem);
+            });
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'assigned': return 'bg-blue-100 text-blue-800';
+                case 'missing': return 'bg-red-100 text-red-800';
+                case 'done': return 'bg-green-100 text-green-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'assigned': return 'Ditugaskan';
+                case 'missing': return 'Terlewat';
+                case 'done': return 'Selesai';
+                default: return 'Unknown';
+            }
+        }
+
+        // File upload functions
+        let selectedFiles = [];
+        let selectedPhotos = [];
+
+        function toggleFileUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const photoArea = document.getElementById('photoArea');
+            
+            // Hide photo area if open
+            photoArea.classList.add('hidden');
+            
+            // Toggle file upload area
+            uploadArea.classList.toggle('hidden');
+            
+            // Clear previous selections when switching
+            if (!uploadArea.classList.contains('hidden')) {
+                selectedPhotos = [];
+                document.getElementById('selectedPhotos').innerHTML = '';
+            }
+        }
+
+        function togglePhotoUpload() {
+            const photoArea = document.getElementById('photoArea');
+            const uploadArea = document.getElementById('uploadArea');
+            
+            // Hide file area if open
+            uploadArea.classList.add('hidden');
+            
+            // Toggle photo upload area
+            photoArea.classList.toggle('hidden');
+            
+            // Clear previous selections when switching
+            if (!photoArea.classList.contains('hidden')) {
+                selectedFiles = [];
+                document.getElementById('selectedFiles').innerHTML = '';
+            }
+        }
+
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            selectedFiles = [...selectedFiles, ...files];
+            displaySelectedFiles();
+        }
+
+        function handlePhotoSelect(event) {
+            const files = Array.from(event.target.files);
+            selectedPhotos = [...selectedPhotos, ...files];
+            displaySelectedPhotos();
+        }
+
+        function displaySelectedFiles() {
+            const container = document.getElementById('selectedFiles');
+            container.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'flex items-center justify-between bg-white p-2 rounded border';
+                fileItem.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl">${getFileIcon(file.type)}</span>
+                        <div>
+                            <p class="text-sm font-medium">${file.name}</p>
+                            <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                        </div>
+                    </div>
+                    <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700">
+                        ✕
+                    </button>
+                `;
+                container.appendChild(fileItem);
+            });
+        }
+
+        function displaySelectedPhotos() {
+            const container = document.getElementById('selectedPhotos');
+            container.innerHTML = '';
+            
+            selectedPhotos.forEach((file, index) => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'relative group';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoItem.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview" class="w-full h-24 object-cover rounded border">
+                        <button onclick="removePhoto(${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                            ✕
+                        </button>
+                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b">
+                            ${file.name}
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+                
+                container.appendChild(photoItem);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displaySelectedFiles();
+        }
+
+        function removePhoto(index) {
+            selectedPhotos.splice(index, 1);
+            displaySelectedPhotos();
+        }
+
+        function getFileIcon(fileType) {
+            if (fileType.includes('image')) return '🖼️';
+            if (fileType.includes('pdf')) return '📄';
+            if (fileType.includes('word') || fileType.includes('document')) return '📝';
+            if (fileType.includes('text')) return '📄';
+            return '📎';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function postToClass() {
+            const content = document.getElementById('postContent').value;
+            const hasFiles = selectedFiles.length > 0;
+            const hasPhotos = selectedPhotos.length > 0;
+            
+            if (!content.trim() && !hasFiles && !hasPhotos) {
+                addNotification('Silakan tulis sesuatu atau lampirkan file/foto untuk dibagikan.', 'warning');
+                return;
+            }
+            
+            // Create new announcement
+            const classItem = classes.find(c => c.id === currentClassId);
+            const newAnnouncement = {
+                id: Date.now(),
+                title: content.trim() ? content.substring(0, 50) + (content.length > 50 ? '...' : '') : 'File dibagikan',
+                content: content.trim() || 'File telah dibagikan dengan kelas.',
+                date: new Date().toLocaleDateString('id-ID'),
+                files: selectedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })),
+                photos: selectedPhotos.map(f => ({ name: f.name, size: f.size }))
+            };
+            
+            classItem.announcements.unshift(newAnnouncement);
+            
+            // Clear form
+            document.getElementById('postContent').value = '';
+            selectedFiles = [];
+            selectedPhotos = [];
+            document.getElementById('selectedFiles').innerHTML = '';
+            document.getElementById('selectedPhotos').innerHTML = '';
+            document.getElementById('uploadArea').classList.add('hidden');
+            document.getElementById('photoArea').classList.add('hidden');
+            
+            // Refresh class detail view
+            openClassDetail(currentClassId);
+            
+            addNotification('Postingan berhasil dibagikan!', 'success');
+        }
+
+        // Add drag and drop functionality
+        function setupDragAndDrop() {
+            const uploadArea = document.getElementById('uploadArea');
+            const photoArea = document.getElementById('photoArea');
+            
+            [uploadArea, photoArea].forEach(area => {
+                if (area) {
+                    area.addEventListener('dragover', function(e) {
+                        e.preventDefault();
+                        this.classList.add('border-blue-400', 'bg-blue-50');
+                    });
+                    
+                    area.addEventListener('dragleave', function(e) {
+                        e.preventDefault();
+                        this.classList.remove('border-blue-400', 'bg-blue-50');
+                    });
+                    
+                    area.addEventListener('drop', function(e) {
+                        e.preventDefault();
+                        this.classList.remove('border-blue-400', 'bg-blue-50');
+                        
+                        const files = Array.from(e.dataTransfer.files);
+                        
+                        if (this.id === 'uploadArea') {
+                            selectedFiles = [...selectedFiles, ...files];
+                            displaySelectedFiles();
+                        } else if (this.id === 'photoArea') {
+                            const imageFiles = files.filter(f => f.type.startsWith('image/'));
+                            selectedPhotos = [...selectedPhotos, ...imageFiles];
+                            displaySelectedPhotos();
+                        }
+                    });
+                }
+            });
+        }
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal-backdrop')) {
+                // Close all modals
+                document.querySelectorAll('[id$="Modal"]').forEach(modal => {
+                    modal.classList.add('hidden');
+                });
+            }
+            
+            // Close user menu when clicking outside
+            if (!event.target.closest('#userMenu') && !event.target.closest('button[onclick="toggleUserMenu()"]')) {
+                document.getElementById('userMenu').classList.add('hidden');
+            }
+            
+            // Close notification dropdown when clicking outside
+            if (!event.target.closest('#notificationDropdown') && !event.target.closest('button[onclick="toggleNotifications()"]')) {
+                document.getElementById('notificationDropdown').classList.add('hidden');
+            }
+        });
+
+        // Handle chat input enter key
+        document.addEventListener('keypress', function(event) {
+            if (event.target.id === 'chatInput' && event.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'985c08a5b58dea83',t:'MTc1ODk4NjkzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
